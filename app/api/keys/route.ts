@@ -7,6 +7,9 @@ import { PRESETS, testProvider, type ProviderConfig, type ProviderKind } from "@
 const DEFAULT_RESP_PATHS: Record<ProviderKind, string> = {
   openai: "choices[0].delta.content",
   openrouter: "choices[0].delta.content",
+  tokenharbor: "choices[0].delta.content",
+  github: "",
+  supabase: "",
   anthropic: "__anthropic__",
   gemini: "candidates[0].content.parts[0].text",
   custom: "",

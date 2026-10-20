@@ -25,6 +25,7 @@ export default function Settings() {
         <div className="flex justify-between items-center"><span>Conta</span><span className="text-muted text-sm">{email || "—"}</span></div>
         <div className="flex justify-between items-center"><span>Tema</span><button onClick={toggle} className="glass rounded-btn px-4 py-1.5 text-sm">{theme === "dark" ? "🌙 Escuro" : "☀️ Claro"}</button></div>
         <div className="flex justify-between items-center"><span>Limites de uso</span><span className="text-green-400 text-sm">Ilimitado — sem paywall</span></div>
+        <div className="flex justify-between items-center"><span>Integrações &amp; Chaves (IA · GitHub · Supabase)</span><Link href="/integrations" className="glass rounded-btn px-4 py-1.5 text-sm">Abrir</Link></div>
         <button onClick={signout} className="glass rounded-btn px-4 py-2 text-sm text-red-400">Sair</button>
       </div>
     </main>

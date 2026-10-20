@@ -1,5 +1,5 @@
 export type Msg = { role: "system" | "user" | "assistant"; content: string };
-export type ProviderKind = "openai" | "anthropic" | "gemini" | "openrouter" | "custom";
+export type ProviderKind = "openai" | "anthropic" | "gemini" | "openrouter" | "tokenharbor" | "github" | "supabase" | "custom";
 
 export type ProviderConfig = {
   kind: ProviderKind;
@@ -19,6 +19,9 @@ export const PRESETS: Record<Exclude<ProviderKind, "custom">, { label: string; i
   anthropic: { kind: "anthropic", label: "Anthropic (Claude)", icon: "🧠", model: "claude-sonnet-4-20250514", base_url: "https://api.anthropic.com/v1/messages", auth_header: "x-api-key", auth_prefix: "", description: "Claude Sonnet, Opus, Haiku" },
   gemini: { kind: "gemini", label: "Google Gemini", icon: "✨", model: "gemini-2.0-flash", base_url: "https://generativelanguage.googleapis.com/v1beta/models/", auth_header: "x-goog-api-key", auth_prefix: "", description: "Gemini Flash, Pro" },
   openrouter: { kind: "openrouter", label: "OpenRouter", icon: "🌐", model: "openai/gpt-4o", base_url: "https://openrouter.ai/api/v1/chat/completions", auth_header: "Authorization", auth_prefix: "Bearer ", description: "Roteia entre 200+ modelos" },
+  tokenharbor: { kind: "tokenharbor", label: "TokenHarbor", icon: "🧠", model: "gpt-4o-mini", base_url: "https://tokenharbor.ai/v1/chat/completions", auth_header: "Authorization", auth_prefix: "Bearer ", description: "Cabeça do agente: GPT, Claude, Gemini e mais via 1 chave" },
+  github: { kind: "github", label: "GitHub", icon: "🐙", model: "", base_url: "https://api.github.com", auth_header: "Authorization", auth_prefix: "Bearer ", description: "PAT com scope repo" },
+  supabase: { kind: "supabase", label: "Supabase", icon: "⚡", model: "", base_url: "https://api.supabase.com/v1", auth_header: "Authorization", auth_prefix: "Bearer ", description: "Management API (sbp_)" },
 };
 
 function applyTemplate(tpl: any, ctx: Record<string, any>): any {
@@ -67,6 +70,11 @@ export async function* streamLLM(provider: ProviderConfig, apiKey: string, messa
     const base = PRESETS.gemini.base_url!;
     url = `${base}${provider.model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
     body = msgsToGemini(messages);
+  } else if (provider.kind === "tokenharbor") {
+    // CABEÇA PRINCIPAL DO AGENTE — API do TokenHarbor (OpenAI-compatible)
+    url = provider.base_url || "https://tokenharbor.ai/v1/chat/completions";
+    headers["authorization"] = `Bearer ${apiKey}`;
+    body = { model: provider.model || "gpt-4o-mini", stream: true, messages: msgsToOpenAI(messages) };
   } else if (provider.kind === "openai" || provider.kind === "openrouter") {
     url = provider.kind === "openrouter" ? PRESETS.openrouter.base_url! : (provider.base_url || PRESETS.openai.base_url!);
     headers["authorization"] = `Bearer ${apiKey}`;
@@ -126,15 +134,32 @@ export async function completeLLM(provider: ProviderConfig, apiKey: string, mess
 // Testa conexão em modo NÃO-stream.
 export async function testProvider(p: ProviderConfig, apiKey: string): Promise<{ ok: boolean; http: number; msg: string }> {
   try {
-    let url: string, headers: Record<string, string> = {}, body: any;
-    if (p.kind === "anthropic") {
+    let url: string, headers: Record<string, string> = {}, body: any, method = "POST";
+    if (p.kind === "github") {
+      // REAL: valida o ghp_ direto na REST API do GitHub
+      url = "https://api.github.com/user"; method = "GET";
+      headers["authorization"] = `Bearer ${apiKey}`;
+      headers["accept"] = "application/vnd.github+json";
+      headers["user-agent"] = "gangstarremote";
+      body = undefined;
+    } else if (p.kind === "supabase") {
+      // REAL: valida o sbp_ direto na Management API do Supabase
+      url = "https://api.supabase.com/v1/projects"; method = "GET";
+      headers["authorization"] = `Bearer ${apiKey}`;
+      body = undefined;
+    } else if (p.kind === "tokenharbor") {
+      // REAL: ping OpenAI-compatible no TokenHarbor (respeita base_url custom)
+      url = p.base_url || "https://tokenharbor.ai/v1/chat/completions";
+      headers["authorization"] = `Bearer ${apiKey}`;
+      body = { model: p.model || "gpt-4o-mini", messages: [{ role: "user", content: "ping" }], max_tokens: 8 };
+    } else if (p.kind === "anthropic") {
       url = PRESETS.anthropic.base_url!; headers["x-api-key"] = apiKey; headers["anthropic-version"] = "2023-06-01";
       body = { model: p.model, max_tokens: 8, messages: [{ role: "user", content: "ping" }] };
     } else if (p.kind === "gemini") {
       url = `${PRESETS.gemini.base_url!}${p.model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       body = { contents: [{ role: "user", parts: [{ text: "ping" }] }] };
     } else if (p.kind === "openai" || p.kind === "openrouter") {
-      url = p.kind === "openrouter" ? PRESETS.openrouter.base_url! : PRESETS.openai.base_url!;
+      url = p.base_url || (p.kind === "openrouter" ? PRESETS.openrouter.base_url! : PRESETS.openai.base_url!);
       headers["authorization"] = `Bearer ${apiKey}`;
       body = { model: p.model, messages: [{ role: "user", content: "ping" }], max_tokens: 8 };
     } else {
@@ -144,7 +169,7 @@ export async function testProvider(p: ProviderConfig, apiKey: string): Promise<{
       const ctx = { model: p.model, messages: [{ role: "user", content: "ping" }] };
       body = applyTemplate(p.request_template || {}, ctx);
     }
-    const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+    const r = await fetch(url, { method, headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
     const txt = (await r.text()).slice(0, 300);
     return { ok: r.ok, http: r.status, msg: txt };
   } catch (e: any) { return { ok: false, http: 0, msg: String(e.message || e) }; }

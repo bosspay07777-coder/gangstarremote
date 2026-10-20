@@ -5,6 +5,7 @@ import { getClient } from "@/lib/supabase/client";
 
 // Presets + Provedor Custom genérico
 const PRESETS: { id: string; name: string; icon: string; kind: string; description: string; fields: { k: string; label: string; placeholder?: string }[]; defaults?: any }[] = [
+  { id: "tokenharbor", name: "TokenHarbor — Cabeça do Agente", icon: "🧠", kind: "tokenharbor", description: "API PRINCIPAL do agente: GPT, Claude, Gemini, DeepSeek via 1 chave (OpenAI-compatible)", fields: [{ k: "api_key", label: "API Key", placeholder: "thk_live_..." }], defaults: { base_url: "https://tokenharbor.ai/v1/chat/completions", model: "gpt-4o-mini" } },
   { id: "openai", name: "OpenAI", icon: "🤖", kind: "openai", description: "GPT-4o, GPT-4 Turbo, o1", fields: [{ k: "api_key", label: "API Key", placeholder: "sk-..." }], defaults: { base_url: "https://api.openai.com/v1/chat/completions" } },
   { id: "anthropic", name: "Anthropic (Claude)", icon: "🧠", kind: "anthropic", description: "Claude Sonnet / Opus / Haiku", fields: [{ k: "api_key", label: "API Key", placeholder: "sk-ant-..." }], defaults: { base_url: "https://api.anthropic.com/v1/messages" } },
   { id: "gemini", name: "Google Gemini", icon: "✨", kind: "gemini", description: "Gemini Flash / Pro", fields: [{ k: "api_key", label: "API Key" }], defaults: { base_url: "https://generativelanguage.googleapis.com/v1beta/models/" } },
@@ -14,7 +15,8 @@ const PRESETS: { id: string; name: string; icon: string; kind: string; descripti
   { id: "groq", name: "Groq", icon: "⚡", kind: "custom", description: "OpenAI-compatible, ultra rápido", fields: [{ k: "api_key", label: "API Key" }], defaults: { base_url: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile", auth_header: "Authorization", auth_prefix: "Bearer ", response_path: "choices[0].delta.content", request_template: { model: "${model}", stream: true, messages: "${messages}" } } },
   { id: "xai", name: "xAI (Grok)", icon: "🅧", kind: "custom", description: "OpenAI-compatible", fields: [{ k: "api_key", label: "API Key" }], defaults: { base_url: "https://api.x.ai/v1/chat/completions", model: "grok-2-latest", auth_header: "Authorization", auth_prefix: "Bearer ", response_path: "choices[0].delta.content", request_template: { model: "${model}", stream: true, messages: "${messages}" } } },
   { id: "cohere", name: "Cohere", icon: "🌀", kind: "custom", description: "Custom (Cohere Chat v2)", fields: [{ k: "api_key", label: "API Key" }], defaults: { base_url: "https://api.cohere.com/v2/chat", model: "command-r-plus", auth_header: "Authorization", auth_prefix: "Bearer ", response_path: "delta.message.content.text", request_template: { model: "${model}", stream: true, messages: "${messages}" } } },
-  { id: "github", name: "GitHub", icon: "🐙", kind: "github", description: "OAuth ou PAT (scope repo)", fields: [{ k: "token", label: "Personal Access Token", placeholder: "ghp_..." }] },
+  { id: "github", name: "GitHub", icon: "🐙", kind: "github", description: "OAuth ou PAT (scope repo) — validação real em api.github.com/user", fields: [{ k: "token", label: "Personal Access Token", placeholder: "ghp_..." }] },
+  { id: "supabase", name: "Supabase (Management API)", icon: "⚡", kind: "supabase", description: "Conecta via token sbp_ — projetos e banco sem SQL — validação real em api.supabase.com", fields: [{ k: "token", label: "Access Token", placeholder: "sbp_..." }] },
   { id: "vercel", name: "Vercel", icon: "▲", kind: "vercel", description: "Token para deploys", fields: [{ k: "token", label: "Access Token" }] },
   { id: "stripe", name: "Stripe", icon: "💳", kind: "stripe", description: "Pagamentos", fields: [{ k: "secret", label: "Secret Key" }] },
   { id: "resend", name: "Resend", icon: "📧", kind: "resend", description: "E-mail", fields: [{ k: "api_key", label: "API Key" }] },
@@ -50,7 +52,7 @@ export default function Integrations() {
     if (!input) return;
     cfg.api_key = input;
     if (p.id === "github") { cfg.token = input; delete cfg.api_key; }
-    if (p.id === "vercel" || p.id === "mercadopago" || p.id === "netlify" || p.id === "figma") { cfg.token = input; delete cfg.api_key; }
+    if (p.id === "vercel" || p.id === "mercadopago" || p.id === "netlify" || p.id === "figma" || p.id === "supabase") { cfg.token = input; delete cfg.api_key; }
     if (p.id === "stripe" || p.id === "resend") { cfg.secret = input; delete cfg.api_key; }
     const model = prompt("Modelo (opcional)", cfg.model || "");
     if (model) cfg.model = model;

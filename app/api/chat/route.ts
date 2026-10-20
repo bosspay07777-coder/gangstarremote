@@ -19,11 +19,21 @@ export async function POST(req: NextRequest) {
     integ = (await sb.from("integrations").select("config,kind,provider").eq("user_id", user.id).eq("provider", provider).single()).data;
   }
   if (!integ) {
-    integ = (await sb.from("integrations").select("config,kind,provider").eq("user_id", user.id).in("kind", ["openai", "anthropic", "gemini", "openrouter", "custom"]).limit(1).single()).data;
+    // CABEÇA PRINCIPAL: TokenHarbor primeiro quando conectado
+    integ = (await sb.from("integrations").select("config,kind,provider").eq("user_id", user.id).eq("provider", "tokenharbor").single()).data;
+  }
+  if (!integ) {
+    integ = (await sb.from("integrations").select("config,kind,provider").eq("user_id", user.id).in("kind", ["tokenharbor", "openai", "anthropic", "gemini", "openrouter", "custom"]).limit(1).single()).data;
+  }
+  if (!integ && process.env.TOKENHARBOR_API_KEY) {
+    // Fallback da plataforma: chave TokenHarbor do ambiente
+    integ = { provider: "tokenharbor", kind: "tokenharbor", config: { api_key: process.env.TOKENHARBOR_API_KEY } };
   }
   if (!integ) return new Response("Nenhum provedor de IA configurado. Vá em /integrations e conecte ao menos um.", { status: 400 });
 
-  const cfg: any = {}; for (const [k, v] of Object.entries(integ.config || {})) cfg[k] = decrypt(String(v));
+  // Decrypt tolerante: se o valor já estiver em claro (ex.: fallback do env), mantém
+  const safeDecrypt = (s: string) => { try { return decrypt(s); } catch { return s; } };
+  const cfg: any = {}; for (const [k, v] of Object.entries(integ.config || {})) cfg[k] = safeDecrypt(String(v));
   const p: ProviderConfig = { ...cfg, kind: integ.kind || "custom" };
   const apiKey = cfg.api_key || cfg.token || cfg.secret || (cfg.key) || "";
 
