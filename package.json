@@ -9,7 +9,7 @@
     "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
-    "next": "15.5.4",
+    "next": "16.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@supabase/supabase-js": "^2.47.10",
