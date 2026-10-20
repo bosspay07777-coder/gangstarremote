@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --bg:240 6% 10%; --surface:240 6% 14%; --border1:240 6% 24%; --fg:0 0% 98%; --muted:240 5% 65%; }
+.light { --bg:0 0% 98%; --surface:0 0% 100%; --border1:240 6% 88%; --fg:240 6% 10%; --muted:240 4% 42%; }
+body { @apply bg-bg text-fg font-sans antialiased; }
+.glass { @apply bg-surface/60 backdrop-blur-xl border border-border1/60; }
+.btn-grad { background: linear-gradient(135deg,#8b5cf6,#3b82f6 55%,#ec4899); }
+.btn-grad:hover { filter:brightness(1.1); }
+.glow:focus-visible { outline:none; box-shadow:0 0 0 2px rgba(139,92,246,.6),0 0 24px rgba(139,92,246,.35); }
+.skeleton { position:relative; overflow:hidden; background:rgba(255,255,255,.06); border-radius:12px; }
+.skeleton::after { content:''; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent); animation:shimmer 1.4s infinite; }
+@keyframes shimmer { 100% { transform:translateX(100%);} }
+* { scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.3) transparent; }
