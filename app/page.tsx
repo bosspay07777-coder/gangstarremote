@@ -14,7 +14,7 @@ export default function Home() {
     setBusy(true);
     const sb = getClient();
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) { localStorage.setItem("pendingPrompt", prompt); r.push("/auth/signin"); return; }
+    if (!user) { localStorage.setItem("pendingPrompt", prompt); r.push("/login"); return; }
     r.push(`/new?prompt=${encodeURIComponent(prompt)}`);
   };
   return (
